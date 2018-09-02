@@ -18,22 +18,30 @@ PARSE_RESULTS_FILE_NAME="parsed_results"
 base_path=$1
 url=$2
 
-log_dir=$(echo $url | awk -F'/' '{print $(NF-1)}')
 log_file=$(echo $url | awk -F'/' '{print $NF}')
+if [[ "$log_file" =~ "job-output.txt" ]]; then
+    log_dir=$(echo $url | awk -F'/' '{print $(NF-1)}')
+    parser="./tests_times.py"
+else
+    log_dir=$(echo $url | awk -F'/' '{print $(NF-2)}')
+    parser="./rest_calls_time.py"
+fi
 
 dest_dir="$base_path/$log_dir"
-
 mkdir -p $dest_dir
+
 wget $url -O "$dest_dir/$log_file"
 if [ $? -ne 0 ]; then
     echo "Failed to download file. Exiting..."
     exit 1
 fi
 
-echo $url >> "$dest_dir/$SRC_FILE_NAME"
+# Save destination from where file were downloaded
+source_file_name="${log_file}_${SRC_FILE_NAME}"
+touch "$dest_dir/$source_file_name"
+echo $url > "$dest_dir/$source_file_name"
 
-if [[ "$log_file" =~ "job-output.txt" ]]; then
-    python ./tests_times.py "$dest_dir/$log_file" >> "$dest_dir/$PARSE_RESULTS_FILE_NAME"
-else
-    python ./rest_calls_time.py "$dest_dir/$log_file" >> "$dest_dir/$PARSE_RESULTS_FILE_NAME"
-fi
+# Parse downloaded file and store results
+results_file_name="${log_file}_${PARSE_RESULTS_FILE_NAME}"
+touch "$dest_dir/$results_file_name"
+python $parser "$dest_dir/$log_file" > "$dest_dir/$results_file_name"
