@@ -20,14 +20,16 @@ url=$2
 
 log_file=$(echo $url | awk -F'/' '{print $NF}')
 if [[ "$log_file" =~ "job-output.txt" ]]; then
-    log_dir=$(echo $url | awk -F'/' '{print $(NF-1)}')
+    log_dir=$(echo $url | awk -F'/' '{print $9}')
+    job_name=$(echo $url | awk -F'/' '{print $8}')
     parser="./tests_times.py"
 else
-    log_dir=$(echo $url | awk -F'/' '{print $(NF-2)}')
+    log_dir=$(echo $url | awk -F'/' '{print $9}')
+    job_name=$(echo $url | awk -F'/' '{print $8}')
     parser="./rest_calls_time.py"
 fi
 
-dest_dir="$base_path/$log_dir"
+dest_dir="$base_path/$job_name/$log_dir"
 mkdir -p $dest_dir
 
 wget $url -O "$dest_dir/$log_file"
