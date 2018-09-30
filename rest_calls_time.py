@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+from collections import OrderedDict
+import matplotlib.pyplot as plt
 import numpy
 import uuid
 import re
@@ -14,6 +16,9 @@ MIN_TIME_HEADER = "Min request time"
 MAX_TIME_HEADER = "Max request time"
 MEDIAN_TIME_HEADER = "Median request time"
 TOTAL_TIME_HEADER = "Total request time"
+
+PLOT_PATH = "/tmp/"
+PLOT_FORMAT = "png"
 
 SYSLOGDATE = '\w+\s+\d+\s+\d{2}:\d{2}:\d{2}((\.|\,)\d{3,6})?'
 DATEFMT = '\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}((\.|\,)\d{3,6})?'
@@ -112,11 +117,15 @@ def parse_file(file_path):
 def calculate_stats(data):
     for req_data in data.values():
         resp_times = [float(r['response time']) for r in req_data['requests']]
+        req_data['summary']['response_times'] = resp_times
         req_data['summary']['call_counts'] = len(req_data['requests'])
         req_data['summary']['total_resp_time'] = sum(resp_times)
         req_data['summary']['min_resp_time'] = min(resp_times)
         req_data['summary']['max_resp_time'] = max(resp_times)
         req_data['summary']['median_resp_time'] = numpy.median(resp_times)
+        req_data['summary']['average_time'] = (
+            req_data['summary']['total_resp_time'] /
+            req_data['summary']['call_counts'])
 
 
 def print_results(data, sortby=AVERAGE_TIME_HEADER, desc_sort=True):
@@ -127,13 +136,10 @@ def print_results(data, sortby=AVERAGE_TIME_HEADER, desc_sort=True):
     overall_table.sortby = sortby
     overall_table.reversesort = desc_sort
     for request, request_data in data.items():
-        average_time = (
-            request_data['summary']['total_resp_time'] /
-            request_data['summary']['call_counts'])
         overall_table.add_row(
             [request,
              request_data['summary']['call_counts'],
-             average_time,
+             request_data['summary']['average_time'],
              request_data['summary']['min_resp_time'],
              request_data['summary']['max_resp_time'],
              request_data['summary']['median_resp_time'],
@@ -142,8 +148,44 @@ def print_results(data, sortby=AVERAGE_TIME_HEADER, desc_sort=True):
     print(overall_table)
 
 
+def plot_graphs(data, top=None, sortby='average_time'):
+    requests_to_plot = data
+    if top:
+        requests_to_plot = OrderedDict(
+            sorted(data.items(),
+                   key=lambda x: x[1]['summary'][sortby],
+                   reverse=True))
+    already_plotted_rows = 0
+    for request, request_data in requests_to_plot.items():
+        resp_times = request_data['summary']['response_times']
+        x_values = range(1, len(resp_times) + 1)
+        plt.scatter(x_values, resp_times, label=request)
+        # Draw line with median value:
+        plt.plot(x_values,
+                 [request_data['summary']['median_resp_time']] * len(x_values),
+                 label="Median response time")
+        # Draw line with average value
+        plt.plot(x_values,
+                 [request_data['summary']['average_time']] * len(x_values),
+                 label="Average response time")
+        plt.xlabel('request')
+        plt.ylabel('time')
+        plt.legend()
+        plt.show()
+
+        file_name = "%s.%s" %(
+            request.replace(" ", "_").replace("/", "_"),
+            PLOT_FORMAT)
+        plt.savefig('%s/%s' % (PLOT_PATH, file_name))
+        plt.clf()
+        already_plotted_rows+=1
+        if top and already_plotted_rows >= top:
+            break
+
+
 if __name__ == "__main__":
     file_path = sys.argv[1]
     data = parse_file(file_path)
     calculate_stats(data)
     print_results(data)
+    plot_graphs(data, 5)
