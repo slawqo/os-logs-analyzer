@@ -131,8 +131,8 @@ def calculate_stats(data):
 def print_results(data, sortby=AVERAGE_TIME_HEADER, desc_sort=True):
     overall_table = PrettyTable(
         [REQUESTS_HEADER, NUMBER_OF_REQUESTS_HEADER,
-         AVERAGE_TIME_HEADER, MIN_TIME_HEADER, MAX_TIME_HEADER,
-         MEDIAN_TIME_HEADER, TOTAL_TIME_HEADER])
+         AVERAGE_TIME_HEADER, MEDIAN_TIME_HEADER,
+         MIN_TIME_HEADER, MAX_TIME_HEADER, TOTAL_TIME_HEADER])
     overall_table.sortby = sortby
     overall_table.reversesort = desc_sort
     for request, request_data in data.items():
@@ -140,9 +140,9 @@ def print_results(data, sortby=AVERAGE_TIME_HEADER, desc_sort=True):
             [request,
              request_data['summary']['call_counts'],
              request_data['summary']['average_time'],
+             request_data['summary']['median_resp_time'],
              request_data['summary']['min_resp_time'],
              request_data['summary']['max_resp_time'],
-             request_data['summary']['median_resp_time'],
              request_data['summary']['total_resp_time']])
 
     print(overall_table)
