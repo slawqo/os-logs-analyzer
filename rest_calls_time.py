@@ -17,7 +17,7 @@ MAX_TIME_HEADER = "Max request time"
 MEDIAN_TIME_HEADER = "Median request time"
 TOTAL_TIME_HEADER = "Total request time"
 
-PLOT_PATH = "/tmp/"
+PLOT_PATH = "."
 PLOT_FORMAT = "png"
 
 SYSLOGDATE = '\w+\s+\d+\s+\d{2}:\d{2}:\d{2}((\.|\,)\d{3,6})?'
